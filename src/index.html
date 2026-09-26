@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-mode="porcelain">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Clockwork Butterfly</title>
+  <meta name="description" content="A procedurally built mechanical butterfly in three.js: meshing gear trains, glass wings, five aesthetic modes, an exploded anatomy view and live kinematics telemetry.">
+  <meta property="og:title" content="Clockwork Butterfly">
+  <meta property="og:description" content="A procedural three.js automaton with five aesthetic modes, an anatomy view and live telemetry.">
+  <meta property="og:image" content="docs/images/porcelain.png">
+  <!-- @head-start -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- @head-end -->
+</head>
+<body>
+<!-- @body-start -->
+<canvas id="stage" aria-label="A 3D mechanical butterfly with brass gears and glass wings, beating its wings"></canvas>
+<div class="curtain" id="curtain"></div>
+<div class="labels" id="labels" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="plate">
+    <div class="eyebrow">Automaton · Specimen 07</div>
+    <h1>Clockwork Butterfly</h1>
+    <div class="spec">
+      <span><b>24</b> jewels</span>
+      <span><b>64 mm</b> wingspan</span>
+      <span>Brass, steel &amp; glass</span>
+    </div>
+  </div>
+  <nav class="modes" aria-label="Aesthetic mode">
+    <div class="modes-row" id="modeRow" role="group" aria-label="Choose an aesthetic mode"></div>
+    <div class="mode-name"><span class="k">Mode</span> <span id="modeName">Porcelain</span></div>
+  </nav>
+</header>
+
+<aside class="telemetry" id="telemetry" hidden aria-label="Live telemetry">
+  <div class="tel-head">
+    <span>Wing angle · 3 s</span>
+    <span class="legend"><i class="sw fore"></i>fore <i class="sw hind"></i>hind</span>
+  </div>
+  <canvas id="spark" width="300" height="96"></canvas>
+  <dl class="tel-grid">
+    <dt>Stroke amplitude</dt><dd id="tAmp">–</dd>
+    <dt>Fore/hind lag</dt><dd id="tLag">–</dd>
+    <dt>Gear A · 16T</dt><dd id="tA">–</dd>
+    <dt>Gear B · 10T</dt><dd id="tB">–</dd>
+    <dt>Gear C · 12T</dt><dd id="tC">–</dd>
+    <dt>Frame rate</dt><dd id="tFps">–</dd>
+    <dt>Triangles</dt><dd id="tTri">–</dd>
+    <dt>Draw calls</dt><dd id="tCalls">–</dd>
+  </dl>
+</aside>
+
+<section class="controls" aria-label="Movement controls">
+  <div class="rate">
+    <div class="rate-head">
+      <label for="beat">Wing beat</label>
+      <output id="beatOut" for="beat">1.2 Hz · 8,640 vph</output>
+    </div>
+    <input id="beat" type="range" min="0.2" max="4" step="0.1" value="1.2">
+  </div>
+  <div class="buttons">
+    <button id="pauseBtn" type="button" aria-pressed="false">Pause</button>
+    <button id="orbitBtn" type="button" aria-pressed="true">Orbit</button>
+    <button id="anatomyBtn" type="button" aria-pressed="false">Anatomy</button>
+    <button id="telBtn" type="button" aria-pressed="false">Telemetry</button>
+    <button id="captureBtn" type="button" hidden>Capture PNG</button>
+  </div>
+  <div class="hint">Drag to turn · scroll or pinch to zoom · keys 1–3 switch mode · A anatomy · T telemetry · space pause</div>
+</section>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module" src="js/main.js"></script>
+<!-- @body-end -->
+</body>
+</html>

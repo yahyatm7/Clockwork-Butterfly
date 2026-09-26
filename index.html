@@ -1,0 +1,1246 @@
+<!doctype html>
+<!-- Generated from src/ by tools/bundle.py. Edit the files in src/, then rebuild. -->
+<html lang="en" data-mode="porcelain">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Clockwork Butterfly</title>
+  <meta name="description" content="A procedurally built mechanical butterfly in three.js: meshing gear trains, glass wings, five aesthetic modes, an exploded anatomy view and live kinematics telemetry.">
+  <meta property="og:title" content="Clockwork Butterfly">
+  <meta property="og:description" content="A procedural three.js automaton with five aesthetic modes, an anatomy view and live telemetry.">
+  <meta property="og:image" content="docs/images/porcelain.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+/* Clockwork Butterfly — UI chrome. Each aesthetic mode swaps the tokens below. */
+:root {
+  color-scheme: light;
+  --bg: #eef1f5;
+  --ink: #18202b;
+  --muted: #5d6878;
+  --accent: #946a28;
+  --accent-2: #1f8f86;
+  --panel: rgba(255, 255, 255, 0.74);
+  --line: rgba(24, 32, 43, 0.14);
+  --focus: #1f6fd1;
+  --display: "Marcellus SC", "Trajan Pro", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+:root[data-mode="verdigris"] {
+  color-scheme: light;
+  --bg: #e3ede8; --ink: #15251f; --muted: #536b61; --accent: #2f7d68; --accent-2: #b0892c;
+  --panel: rgba(250, 255, 252, 0.72); --line: rgba(21, 37, 31, 0.15); --focus: #2f7d68;
+}
+:root[data-mode="midnight"] {
+  color-scheme: dark;
+  --bg: #07090d; --ink: #eadcbe; --muted: #8f8570; --accent: #c9a15a; --accent-2: #3fd6c1;
+  --panel: rgba(12, 14, 18, 0.72); --line: rgba(201, 161, 90, 0.28); --focus: #3fd6c1;
+}
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.45 var(--mono);
+  overflow: hidden;
+  transition: background-color .4s, color .4s;
+}
+#stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+.curtain {
+  position: fixed; inset: 0; pointer-events: none;
+  background: var(--bg); opacity: 0;
+  transition: opacity .18s ease;
+}
+.curtain.on { opacity: 1; }
+
+/* header */
+.top {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 22px);
+  left: 24px; right: 24px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start;
+  gap: 16px 24px;
+  pointer-events: none;
+}
+.plate { display: grid; gap: 6px; max-width: 30rem; }
+.eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+h1 {
+  margin: 0;
+  font-family: var(--display); font-weight: 400;
+  font-size: clamp(28px, 5vw, 46px); line-height: 1.05; letter-spacing: 0.04em;
+  text-wrap: balance;
+}
+.spec { font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.spec b { color: var(--accent); font-weight: 500; }
+
+.modes { pointer-events: auto; display: grid; justify-items: end; gap: 8px; }
+.modes-row {
+  display: flex; gap: 6px; padding: 6px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.swatch {
+  width: 30px; height: 30px; padding: 0; border-radius: 50%;
+  border: 1px solid var(--line); cursor: pointer; position: relative;
+  background: var(--sw-bg);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.swatch::after {
+  content: ""; position: absolute; inset: 9px; border-radius: 50%;
+  background: var(--sw-accent);
+  box-shadow: 0 0 0 2px var(--sw-bg);
+}
+.swatch:hover { transform: translateY(-1px); }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink); }
+.mode-name { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+.mode-name .k { color: var(--muted); }
+
+/* bottom controls */
+.controls {
+  position: fixed;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  width: min(880px, calc(100% - 32px));
+  box-sizing: border-box;
+  background: var(--panel);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px;
+  display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 10px 16px; align-items: center;
+}
+.rate { display: grid; gap: 8px; min-width: 0; }
+.rate-head {
+  white-space: nowrap;
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.rate-head output { color: var(--ink); letter-spacing: 0.02em; text-transform: none; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; appearance: none; -webkit-appearance: none; background: transparent; height: 22px; margin: 0; }
+input[type=range]::-webkit-slider-runnable-track { height: 2px; background: linear-gradient(90deg, var(--accent), var(--line)); }
+input[type=range]::-moz-range-track { height: 2px; background: linear-gradient(90deg, var(--accent), var(--line)); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; margin-top: -7px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent);
+}
+input[type=range]::-moz-range-thumb {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent);
+}
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+button {
+  font: 500 12px/1 var(--mono); letter-spacing: 0.04em;
+  color: var(--ink); background: transparent;
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 9px 13px; cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.buttons button:hover { border-color: var(--accent); }
+.buttons button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border-color: var(--accent);
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.hint { grid-column: 1 / -1; font-size: 11px; color: var(--muted); }
+
+/* telemetry */
+.telemetry {
+  position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+  width: 300px; box-sizing: border-box;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 14px 16px; display: grid; gap: 10px;
+}
+.tel-head {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+}
+.legend { display: inline-flex; align-items: center; gap: 5px; text-transform: none; letter-spacing: 0; }
+.legend .sw { display: inline-block; width: 12px; height: 2px; }
+.legend .fore { background: var(--accent); }
+.legend .hind { background: var(--accent-2); margin-left: 6px; }
+#spark { width: 100%; height: 96px; display: block; }
+.tel-grid {
+  margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px;
+  font-size: 12px; font-variant-numeric: tabular-nums;
+}
+.tel-grid dt { color: var(--muted); }
+.tel-grid dd { margin: 0; text-align: right; }
+
+/* anatomy labels */
+.labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.label {
+  position: absolute; left: 0; top: 0;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; line-height: 1.2; white-space: nowrap;
+  color: var(--ink);
+  transition: opacity .2s;
+  will-change: transform;
+}
+.label i {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.label span {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px;
+}
+.label.flip { flex-direction: row-reverse; }
+.label.flip span { text-align: right; }
+.label small { display: block; color: var(--muted); font-size: 10px; }
+
+@media (max-width: 720px) {
+  .telemetry { top: auto; transform: none; right: 16px; left: 16px; width: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 190px); }
+}
+@media (max-width: 560px) {
+  .top { left: 16px; right: 16px; top: calc(env(safe-area-inset-top, 0px) + 14px); }
+  .modes { justify-items: start; }
+  .controls { grid-template-columns: 1fr; }
+  .buttons { justify-content: stretch; }
+  .buttons button { flex: 1 1 auto; }
+  .hint { display: none; }
+  .label small { display: none; }
+  .telemetry { bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="stage" aria-label="A 3D mechanical butterfly with brass gears and glass wings, beating its wings"></canvas>
+<div class="curtain" id="curtain"></div>
+<div class="labels" id="labels" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="plate">
+    <div class="eyebrow">Automaton · Specimen 07</div>
+    <h1>Clockwork Butterfly</h1>
+    <div class="spec">
+      <span><b>24</b> jewels</span>
+      <span><b>64 mm</b> wingspan</span>
+      <span>Brass, steel &amp; glass</span>
+    </div>
+  </div>
+  <nav class="modes" aria-label="Aesthetic mode">
+    <div class="modes-row" id="modeRow" role="group" aria-label="Choose an aesthetic mode"></div>
+    <div class="mode-name"><span class="k">Mode</span> <span id="modeName">Porcelain</span></div>
+  </nav>
+</header>
+
+<aside class="telemetry" id="telemetry" hidden aria-label="Live telemetry">
+  <div class="tel-head">
+    <span>Wing angle · 3 s</span>
+    <span class="legend"><i class="sw fore"></i>fore <i class="sw hind"></i>hind</span>
+  </div>
+  <canvas id="spark" width="300" height="96"></canvas>
+  <dl class="tel-grid">
+    <dt>Stroke amplitude</dt><dd id="tAmp">–</dd>
+    <dt>Fore/hind lag</dt><dd id="tLag">–</dd>
+    <dt>Gear A · 16T</dt><dd id="tA">–</dd>
+    <dt>Gear B · 10T</dt><dd id="tB">–</dd>
+    <dt>Gear C · 12T</dt><dd id="tC">–</dd>
+    <dt>Frame rate</dt><dd id="tFps">–</dd>
+    <dt>Triangles</dt><dd id="tTri">–</dd>
+    <dt>Draw calls</dt><dd id="tCalls">–</dd>
+  </dl>
+</aside>
+
+<section class="controls" aria-label="Movement controls">
+  <div class="rate">
+    <div class="rate-head">
+      <label for="beat">Wing beat</label>
+      <output id="beatOut" for="beat">1.2 Hz · 8,640 vph</output>
+    </div>
+    <input id="beat" type="range" min="0.2" max="4" step="0.1" value="1.2">
+  </div>
+  <div class="buttons">
+    <button id="pauseBtn" type="button" aria-pressed="false">Pause</button>
+    <button id="orbitBtn" type="button" aria-pressed="true">Orbit</button>
+    <button id="anatomyBtn" type="button" aria-pressed="false">Anatomy</button>
+    <button id="telBtn" type="button" aria-pressed="false">Telemetry</button>
+    <button id="captureBtn" type="button" hidden>Capture PNG</button>
+  </div>
+  <div class="hint">Drag to turn · scroll or pinch to zoom · keys 1–3 switch mode · A anatomy · T telemetry · space pause</div>
+</section>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// Aesthetic modes. Each mode sets the 3D look (background, light, metals, wing paint)
+// and, through the data-mode attribute, the UI tokens in css/style.css.
+
+const THEMES = {
+  porcelain: {
+    label: 'Porcelain',
+    swatch: ['#f4f6f9', '#c39a52'],
+    bg: { top: '#fbfcfd', bottom: '#dfe5ec', style: 'radial' },
+    fog: ['#e6ebf1', 0.018],
+    tone: 'neutral', exposure: 1.0,
+    bloom: [0.18, 0.35, 0.97],
+    key: ['#fff4e2', 2.6], rim: ['#9cc8ff', 1.3], hemi: ['#ffffff', '#b9a78a', 1.0],
+    metals: { brass: '#c39a52', brassDark: '#8c6b33', copper: '#bd6f43', steel: '#3a414c', blued: '#2a4f93' },
+    eye: ['#0e4a44', '#1fc9b3', 0.9], core: '#ffa640', coreGlow: 1.6,
+    dust: ['#9c7a3e', 0.28, false],
+    wing: {
+      stops: ['rgba(18,62,76,0.72)', 'rgba(36,132,142,0.42)', 'rgba(120,190,200,0.26)', 'rgba(205,140,60,0.66)'],
+      band: 'rgba(170,105,40,0.6)', bandDark: 'rgba(40,25,10,0.55)', hex: 0.35,
+      dial: 'rgba(150,100,40,0.9)', glowLine: '#ffd28a', glow: '#ffb45a', glowI: 0.22,
+      eye: ['rgba(255,230,160,0.95)', 'rgba(40,190,180,0.85)', 'rgba(10,30,40,0.9)', 'rgba(205,145,60,0.8)'],
+    },
+  },
+  verdigris: {
+    label: 'Verdigris',
+    swatch: ['#e1ece6', '#3f8f78'],
+    bg: { top: '#f3f8f5', bottom: '#cbdcd3', style: 'radial' },
+    fog: ['#dbe7e1', 0.018],
+    tone: 'neutral', exposure: 1.0,
+    bloom: [0.2, 0.35, 0.97],
+    key: ['#fff6df', 2.5], rim: ['#a8f0d8', 1.2], hemi: ['#f4fff9', '#9a9a6a', 1.0],
+    metals: { brass: '#a8914e', brassDark: '#5f7a64', copper: '#4f9a86', steel: '#2f3a36', blued: '#2c5a52' },
+    eye: ['#3a2a06', '#f0b43c', 1.0], core: '#f2c14e', coreGlow: 1.6,
+    dust: ['#6f8f76', 0.28, false],
+    wing: {
+      stops: ['rgba(15,60,45,0.72)', 'rgba(50,140,110,0.40)', 'rgba(150,200,170,0.28)', 'rgba(200,170,70,0.62)'],
+      band: 'rgba(110,90,30,0.55)', bandDark: 'rgba(20,35,25,0.5)', hex: 0.34,
+      dial: 'rgba(120,95,30,0.9)', glowLine: '#f6dc8a', glow: '#e8c060', glowI: 0.25,
+      eye: ['rgba(255,240,170,0.95)', 'rgba(60,170,130,0.85)', 'rgba(15,35,25,0.9)', 'rgba(200,160,60,0.8)'],
+    },
+  },
+  midnight: {
+    label: 'Midnight',
+    swatch: ['#0b0e13', '#c9a15a'],
+    bg: { top: '#111722', bottom: '#040507', style: 'radial' },
+    fog: ['#07090d', 0.045],
+    tone: 'aces', exposure: 1.05,
+    bloom: [0.45, 0.5, 0.86],
+    key: ['#ffe2b0', 2.2], rim: ['#6fd8ff', 1.4], hemi: ['#3a4a5a', '#120c06', 0.35],
+    metals: { brass: '#c9a15a', brassDark: '#8a6a32', copper: '#c07445', steel: '#2b3038', blued: '#1f3b6e' },
+    eye: ['#0c3a36', '#27f0d2', 1.6], core: '#ffae4a', coreGlow: 2.2,
+    dust: ['#e0b56a', 0.55, true],
+    wing: {
+      stops: ['rgba(12,40,48,0.75)', 'rgba(24,110,118,0.42)', 'rgba(60,150,150,0.30)', 'rgba(210,140,60,0.62)'],
+      band: 'rgba(190,120,50,0.55)', bandDark: 'rgba(40,20,8,0.6)', hex: 0.35,
+      dial: 'rgba(240,200,120,0.85)', glowLine: '#ffd28a', glow: '#ffb45a', glowI: 0.55,
+      eye: ['rgba(255,230,160,0.95)', 'rgba(60,220,200,0.8)', 'rgba(10,30,40,0.9)', 'rgba(210,150,60,0.8)'],
+    },
+  },
+};
+
+const MODE_ORDER = ['porcelain', 'verdigris', 'midnight'];
+
+// Paints the screen-space backdrop for a mode: a soft radial gradient.
+function paintBackground(canvas, theme, w, h) {
+  const W = 1024, H = Math.max(2, Math.round(1024 * h / w));
+  canvas.width = W; canvas.height = H;
+  const c = canvas.getContext('2d');
+  const { top, bottom } = theme.bg;
+  const g = c.createRadialGradient(W * 0.5, H * 0.42, 0, W * 0.5, H * 0.5, Math.hypot(W, H) * 0.62);
+  g.addColorStop(0, top); g.addColorStop(1, bottom);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+}
+// Procedural geometry for the automaton: gears, thorax, head, abdomen, legs and wings.
+// Nothing is loaded from a model file; every part is generated from curves and shapes.
+
+function createMaterials() {
+  return {
+    brass: new THREE.MeshStandardMaterial({ color: '#c9a15a', metalness: 1, roughness: 0.28 }),
+    brassDark: new THREE.MeshStandardMaterial({ color: '#8a6a32', metalness: 1, roughness: 0.4 }),
+    copper: new THREE.MeshStandardMaterial({ color: '#c07445', metalness: 1, roughness: 0.3 }),
+    steel: new THREE.MeshStandardMaterial({ color: '#2b3038', metalness: 1, roughness: 0.32, side: THREE.DoubleSide }),
+    blued: new THREE.MeshStandardMaterial({ color: '#1f3b6e', metalness: 1, roughness: 0.22 }),
+    ruby: new THREE.MeshPhysicalMaterial({ color: '#b3122e', emissive: '#ff2244', emissiveIntensity: 0.9, roughness: 0.05, metalness: 0, clearcoat: 1 }),
+    eye: new THREE.MeshPhysicalMaterial({ color: '#0c3a36', emissive: '#27f0d2', emissiveIntensity: 1.6, roughness: 0.08, metalness: 0.2, clearcoat: 1, flatShading: true }),
+    glass: new THREE.MeshPhysicalMaterial({ color: '#bfe8ff', metalness: 0, roughness: 0.02, transparent: true, opacity: 0.16, clearcoat: 1, side: THREE.DoubleSide, depthWrite: false }),
+    core: new THREE.MeshBasicMaterial({ color: '#ffae4a' }),
+  };
+}
+
+const UP = new THREE.Vector3(0, 1, 0);
+function rod(a, b, r, mat, seg = 10) {
+  const d = new THREE.Vector3().subVectors(b, a);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), seg), mat);
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(UP, d.clone().normalize());
+  return m;
+}
+function ball(p, r, mat, seg = 16) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, seg, seg), mat);
+  m.position.copy(p);
+  return m;
+}
+function tube(points, r, mat, closed = false, seg = 64) {
+  const curve = new THREE.CatmullRomCurve3(points, closed, 'centripetal');
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, seg, r, 8, closed), mat);
+}
+function anchor(parent, x, y, z) {
+  const o = new THREE.Object3D(); o.position.set(x, y, z); parent.add(o); return o;
+}
+
+/* Spur gear: trapezoid teeth on a pitch circle of radius teeth·m/2, spoke windows and a ruby jewel. */
+function makeGear(M, teeth, m, depth, mat, withJewel = true) {
+  const rp = teeth * m / 2, ra = rp + m, rd = rp - 1.25 * m;
+  const s = (Math.PI * 2) / teeth;
+  const shape = new THREE.Shape();
+  for (let i = 0; i < teeth; i++) {
+    const a = i * s;
+    const pts = [[rd, a], [ra, a + 0.2 * s], [ra, a + 0.45 * s], [rd, a + 0.65 * s], [rd, a + 0.83 * s]];
+    pts.forEach(([r, t], k) => {
+      const x = r * Math.cos(t), y = r * Math.sin(t);
+      if (i === 0 && k === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+    });
+  }
+  shape.closePath();
+  const holeR = Math.max(rd * 0.12, 0.012);
+  const hole = new THREE.Path(); hole.absarc(0, 0, holeR, 0, Math.PI * 2, true);
+  shape.holes.push(hole);
+  if (rd > 0.07) {
+    const n = teeth > 14 ? 6 : 5;
+    const r1 = Math.max(holeR * 2.4, rd * 0.3), r2 = rd * 0.76, spokeW = rd * 0.16;
+    for (let k = 0; k < n; k++) {
+      const a0 = (k / n) * Math.PI * 2 + spokeW / r1 / 2, a1 = ((k + 1) / n) * Math.PI * 2 - spokeW / r1 / 2;
+      const b0 = (k / n) * Math.PI * 2 + spokeW / r2 / 2, b1 = ((k + 1) / n) * Math.PI * 2 - spokeW / r2 / 2;
+      const p = new THREE.Path();
+      p.moveTo(r1 * Math.cos(a0), r1 * Math.sin(a0));
+      p.lineTo(r2 * Math.cos(b0), r2 * Math.sin(b0));
+      p.absarc(0, 0, r2, b0, b1, false);
+      p.lineTo(r1 * Math.cos(a1), r1 * Math.sin(a1));
+      p.absarc(0, 0, r1, a1, a0, true);
+      shape.holes.push(p);
+    }
+  }
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth, curveSegments: 10, bevelEnabled: true,
+    bevelThickness: depth * 0.18, bevelSize: m * 0.12, bevelSegments: 2,
+  });
+  geo.translate(0, 0, -depth / 2);
+  const g = new THREE.Group();
+  g.add(new THREE.Mesh(geo, mat));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(holeR * 1.9, holeR * 1.9, depth * 1.8, 16), M.steel);
+  hub.rotation.x = Math.PI / 2;
+  g.add(hub);
+  if (withJewel) g.add(ball(new THREE.Vector3(0, 0, -depth * 0.95), holeR * 1.1, M.ruby, 12));
+  g.userData = { rp, teeth, step: s };
+  return g;
+}
+
+/* ---------- wing outlines ---------- */
+function foreShape() {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0.15);
+  s.bezierCurveTo(0.6, 0.55, 1.6, 1.05, 2.6, 1.25);
+  s.bezierCurveTo(3.0, 1.32, 3.15, 1.0, 2.95, 0.6);
+  s.bezierCurveTo(2.7, 0.05, 2.3, -0.35, 1.7, -0.45);
+  s.bezierCurveTo(1.1, -0.5, 0.45, -0.25, 0, -0.1);
+  s.closePath();
+  return s;
+}
+function hindShape() {
+  const s = new THREE.Shape();
+  s.moveTo(0, -0.02);
+  s.bezierCurveTo(0.7, 0.05, 1.6, -0.15, 2.0, -0.55);
+  s.bezierCurveTo(2.35, -0.95, 2.2, -1.5, 1.8, -1.8);
+  s.bezierCurveTo(1.5, -2.0, 1.25, -2.05, 1.08, -2.45);
+  s.bezierCurveTo(1.02, -2.72, 0.84, -2.74, 0.82, -2.45);
+  s.bezierCurveTo(0.75, -2.0, 0.4, -1.3, 0.12, -0.5);
+  s.bezierCurveTo(0.04, -0.3, 0, -0.15, 0, -0.02);
+  return s;
+}
+
+/* Paints the membrane (colour + emissive) into canvases mapped to the wing's bounding box. */
+function wingPainter(shape, dial, eyes) {
+  const pts = shape.getPoints(80);
+  const bb = new THREE.Box2().setFromPoints(pts);
+  bb.expandByScalar(0.03);
+  const w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y;
+  const W = 1024, H = Math.round(Math.min(1024, Math.max(256, W * h / w)));
+  const ppu = W / w;
+  const px = (x, y) => [(x - bb.min.x) / w * W, (1 - (y - bb.min.y) / h) * H];
+  const root = px(0, 0);
+  const outline = c => { c.beginPath(); pts.forEach((p, i) => { const [x, y] = px(p.x, p.y); i ? c.lineTo(x, y) : c.moveTo(x, y); }); c.closePath(); };
+
+  const hex = document.createElement('canvas'); hex.width = W; hex.height = H;
+  {
+    const c = hex.getContext('2d');
+    const s = 0.11 * ppu, hw = Math.sqrt(3) * s;
+    c.strokeStyle = '#fff'; c.lineWidth = 1.6;
+    c.beginPath();
+    for (let row = -1; row * 1.5 * s < H + s; row++) for (let col = -1; col * hw < W + hw; col++) {
+      const cx = col * hw + (row % 2 ? hw / 2 : 0), cy = row * 1.5 * s;
+      for (let k = 0; k < 6; k++) { const a = Math.PI / 180 * (60 * k - 30); const x = cx + s * 0.92 * Math.cos(a), y = cy + s * 0.92 * Math.sin(a); k ? c.lineTo(x, y) : c.moveTo(x, y); }
+      c.closePath();
+    }
+    c.stroke();
+    c.globalCompositeOperation = 'destination-in';
+    const g = c.createRadialGradient(root[0], root[1], 0, root[0], root[1], Math.max(W, H));
+    g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.35, 'rgba(0,0,0,0.15)'); g.addColorStop(1, 'rgba(0,0,0,1)');
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+  }
+  // tint helper: recolour the white hex lattice
+  const tinted = document.createElement('canvas'); tinted.width = W; tinted.height = H;
+  function hexIn(color) {
+    const c = tinted.getContext('2d');
+    c.globalCompositeOperation = 'source-over';
+    c.clearRect(0, 0, W, H); c.drawImage(hex, 0, 0);
+    c.globalCompositeOperation = 'source-in'; c.fillStyle = color; c.fillRect(0, 0, W, H);
+    return tinted;
+  }
+
+  function drawDial(c, color, strong) {
+    const [cx, cy] = px(dial.x, dial.y);
+    const R = dial.r * ppu;
+    c.save();
+    c.strokeStyle = color; c.fillStyle = color;
+    c.lineWidth = strong ? 3 : 2.5;
+    [1, 0.86, 0.3].forEach(k => { c.beginPath(); c.arc(cx, cy, R * k, 0, Math.PI * 2); c.stroke(); });
+    for (let i = 0; i < 60; i++) {
+      const a = i / 60 * Math.PI * 2, L = i % 5 === 0 ? 0.12 : 0.05;
+      c.lineWidth = i % 5 === 0 ? 3 : 1.5;
+      c.beginPath(); c.moveTo(cx + Math.cos(a) * R * 0.86, cy + Math.sin(a) * R * 0.86); c.lineTo(cx + Math.cos(a) * R * (0.86 - L), cy + Math.sin(a) * R * (0.86 - L)); c.stroke();
+    }
+    c.font = `${Math.round(R * 0.16)}px "Marcellus SC", Georgia, serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    [['XII', -Math.PI / 2], ['III', 0], ['VI', Math.PI / 2], ['IX', Math.PI]].forEach(([t, a]) => c.fillText(t, cx + Math.cos(a) * R * 0.58, cy + Math.sin(a) * R * 0.58));
+    c.lineWidth = 4; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(-2.1) * R * 0.45, cy + Math.sin(-2.1) * R * 0.45); c.stroke();
+    c.lineWidth = 2.5; c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(-0.5) * R * 0.7, cy + Math.sin(-0.5) * R * 0.7); c.stroke();
+    c.restore();
+  }
+
+  const col = document.createElement('canvas'); col.width = W; col.height = H;
+  const glo = document.createElement('canvas'); glo.width = W; glo.height = H;
+  const map = new THREE.CanvasTexture(col); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 8;
+  const emap = new THREE.CanvasTexture(glo); emap.colorSpace = THREE.SRGBColorSpace; emap.anisotropy = 8;
+
+  function paint(p) {
+    let c = col.getContext('2d');
+    c.clearRect(0, 0, W, H);
+    c.save(); outline(c); c.clip();
+    const g = c.createRadialGradient(root[0], root[1], 0, root[0], root[1], Math.max(W, H) * 1.05);
+    [0, 0.35, 0.7, 1].forEach((t, i) => g.addColorStop(t, p.stops[i]));
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    c.globalAlpha = p.hex; c.drawImage(hexIn(p.dial), 0, 0); c.globalAlpha = 1;
+    outline(c); c.lineWidth = 0.22 * ppu; c.strokeStyle = p.band; c.stroke();
+    outline(c); c.lineWidth = 0.1 * ppu; c.strokeStyle = p.bandDark; c.stroke();
+    eyes.forEach(e => {
+      const [x, y] = px(e.x, e.y), r = e.r * ppu;
+      const eg = c.createRadialGradient(x, y, 0, x, y, r);
+      eg.addColorStop(0, p.eye[0]); eg.addColorStop(0.3, p.eye[1]); eg.addColorStop(0.55, p.eye[2]); eg.addColorStop(0.75, p.eye[3]); eg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = eg; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    });
+    drawDial(c, p.dial, false);
+    c.restore();
+
+    c = glo.getContext('2d');
+    c.fillStyle = '#000'; c.fillRect(0, 0, W, H);
+    c.save(); outline(c); c.clip();
+    c.globalAlpha = 0.5; c.drawImage(hexIn('#ffffff'), 0, 0); c.globalAlpha = 1;
+    drawDial(c, p.glowLine, true);
+    eyes.forEach(e => { const [x, y] = px(e.x, e.y); c.fillStyle = '#fff'; c.beginPath(); c.arc(x, y, e.r * ppu * 0.18, 0, Math.PI * 2); c.fill(); });
+    c.restore();
+    map.needsUpdate = true; emap.needsUpdate = true;
+  }
+  return { map, emap, bb, paint };
+}
+
+/* ---------- the whole specimen ---------- */
+function buildButterfly(M, wingPalette) {
+  const bug = new THREE.Group();
+  const gears = [];      // { obj, axis, phase, ratio, osc? }
+  const wings = [];      // { pivot, kind, holder, base, side }
+  const painters = [];   // { paint, material }
+  const anchors = {};
+  const explode = [];    // { obj, base: Vector3, dir: Vector3 }
+
+  /* thorax */
+  const TX = 0.34, TY = 0.3, TZ = 0.55;
+  const hull = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), M.steel);
+  hull.scale.set(TX, TY, TZ);
+  bug.add(hull);
+  const domeG = new THREE.Group(); bug.add(domeG);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24, 0, Math.PI * 2, 0, Math.PI / 2), M.glass);
+  dome.scale.set(TX, TY * 0.75, TZ); dome.renderOrder = 5;
+  domeG.add(dome);
+  anchors.dome = anchor(domeG, 0.1, TY * 0.75, 0.25);
+  explode.push({ obj: domeG, base: domeG.position.clone(), dir: new THREE.Vector3(0, 1.3, 0) });
+
+  const rimPts = [];
+  for (let i = 0; i < 64; i++) { const a = i / 64 * Math.PI * 2; rimPts.push(new THREE.Vector3(TX * Math.cos(a), 0, TZ * Math.sin(a))); }
+  bug.add(tube(rimPts, 0.022, M.brass, true, 128));
+  for (let i = 0; i < 20; i++) {
+    const a = i / 20 * Math.PI * 2;
+    bug.add(ball(new THREE.Vector3(TX * 1.02 * Math.cos(a), -0.03, TZ * 1.02 * Math.sin(a)), 0.014, M.brassDark, 8));
+  }
+  [-0.32, 0, 0.32].forEach(z => {
+    const k = Math.sqrt(1 - (z / TZ) ** 2), pts = [];
+    for (let i = 0; i <= 24; i++) { const a = Math.PI + i / 24 * Math.PI; pts.push(new THREE.Vector3(TX * k * 1.02 * Math.cos(a), TY * k * 1.02 * Math.sin(a), z)); }
+    bug.add(tube(pts, 0.012, M.brass, false, 32));
+  });
+  const core = ball(new THREE.Vector3(0, -0.1, 0), 0.11, M.core, 24);
+  bug.add(core);
+  anchors.core = anchor(bug, 0.0, -0.16, 0.0);
+  const coreLight = new THREE.PointLight('#ff9a3a', 2.5, 2.5, 2);
+  coreLight.position.set(0, -0.05, 0);
+  bug.add(coreLight);
+
+  /* gear train: axes vertical, meshed along the body axis (module 0.022) */
+  const train = new THREE.Group(); bug.add(train);
+  explode.push({ obj: train, base: train.position.clone(), dir: new THREE.Vector3(0, 0.75, 0) });
+  const mG = 0.022;
+  const flatGear = (teeth, mat, depth = 0.035) => {
+    const g = makeGear(M, teeth, mG, depth, mat);
+    const holder = new THREE.Group();
+    g.rotation.x = -Math.PI / 2;
+    holder.add(g);
+    return holder;
+  };
+  const gA = flatGear(16, M.brass); gA.position.set(0, 0.03, 0);
+  const gB = flatGear(10, M.copper); gB.position.set(0, 0.03, (16 + 10) * mG / 2);
+  const gC = flatGear(12, M.brass); gC.position.set(0, 0.03, -(16 + 12) * mG / 2);
+  const gA2 = flatGear(8, M.blued, 0.03); gA2.position.set(0, 0.075, 0);
+  [gA, gB, gC, gA2].forEach(g => train.add(g));
+  const sA = Math.PI * 2 / 16, sB = Math.PI * 2 / 10, sC = Math.PI * 2 / 12;
+  // Phases put a tooth of A into a gap of B and C at the contact points.
+  gears.push({ obj: gA, axis: 'y', phase: -Math.PI / 2 - 0.325 * sA, ratio: 1, id: 'A' });
+  gears.push({ obj: gA2, axis: 'y', phase: -Math.PI / 2 - 0.325 * sA, ratio: 1 });
+  gears.push({ obj: gB, axis: 'y', phase: Math.PI / 2 - 0.825 * sB, ratio: -16 / 10, id: 'B' });
+  gears.push({ obj: gC, axis: 'y', phase: -Math.PI / 2 - 0.825 * sC, ratio: -16 / 12, id: 'C' });
+  anchors.train = anchor(train, 0.1, 0.06, -0.42);
+  {
+    const pts = [];
+    for (let i = 0; i <= 160; i++) { const t = i / 160, a = t * Math.PI * 8, r = 0.02 + t * 0.075; pts.push(new THREE.Vector3(r * Math.cos(a), 0, r * Math.sin(a))); }
+    const spring = tube(pts, 0.004, M.blued, false, 320);
+    spring.position.y = 0.105;
+    train.add(spring);
+    gears.push({ obj: spring, axis: 'y', phase: 0, ratio: 0, osc: true });
+    anchors.spring = anchor(train, -0.1, 0.11, 0.12);
+  }
+
+  /* head */
+  const HZ = 0.74;
+  const head = new THREE.Group(); head.position.set(0, 0.02, HZ); bug.add(head);
+  explode.push({ obj: head, base: head.position.clone(), dir: new THREE.Vector3(0, 0.15, 0.85) });
+  head.add(ball(new THREE.Vector3(), 0.19, M.steel, 32));
+  const neck = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 12, 40), M.brass);
+  neck.position.z = -0.14; head.add(neck);
+  const band = new THREE.Mesh(new THREE.TorusGeometry(0.19, 0.015, 10, 40), M.brass);
+  band.rotation.y = Math.PI / 2; head.add(band);
+  [-1, 1].forEach(sx => {
+    const e = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11, 1), M.eye);
+    e.position.set(sx * 0.14, 0.04, 0.07); head.add(e);
+    const bezel = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.012, 8, 32), M.brass);
+    bezel.position.set(sx * 0.12, 0.035, 0.055); bezel.lookAt(new THREE.Vector3(sx * 2, 0.4, 0.8).add(bezel.position)); head.add(bezel);
+    const base = new THREE.Vector3(sx * 0.06, 0.16, 0.07);
+    const pts = [base, new THREE.Vector3(sx * 0.16, 0.6, 0.35), new THREE.Vector3(sx * 0.34, 1.0, 0.85), new THREE.Vector3(sx * 0.55, 1.18, 1.35)];
+    const curve = new THREE.CatmullRomCurve3(pts);
+    head.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 60, 0.011, 6), M.brassDark));
+    for (let i = 1; i < 14; i++) head.add(ball(curve.getPoint(i / 14), 0.02, M.brass, 8));
+    const tip = curve.getPoint(1);
+    head.add(ball(tip, 0.05, M.copper, 16));
+    head.add(ball(tip.clone().add(new THREE.Vector3(0, 0.02, 0.03)), 0.018, M.ruby, 10));
+    if (sx > 0) { anchors.antenna = anchor(head, tip.x, tip.y, tip.z); anchors.eye = anchor(head, 0.22, 0.04, 0.1); }
+  });
+  {
+    const pts = [];
+    for (let i = 0; i <= 120; i++) { const t = i / 120, a = t * Math.PI * 5, r = 0.09 * (1 - t) + 0.012; pts.push(new THREE.Vector3(0, -0.17 - r * Math.cos(a) + 0.09, 0.2 + r * Math.sin(a))); }
+    head.add(tube(pts, 0.009, M.brass, false, 200));
+    anchors.proboscis = anchor(head, 0, -0.2, 0.22);
+  }
+
+  /* abdomen: a chain of nested segments so a small bend per joint accumulates into a curl */
+  const abdomen = [];
+  {
+    let parent = bug;
+    const n = 9, len = 0.2;
+    for (let i = 0; i < n; i++) {
+      const seg = new THREE.Group();
+      seg.position.set(0, i === 0 ? -0.02 : 0, i === 0 ? -0.48 : -len);
+      const r0 = 0.25 * (1 - i / (n + 2.5)), r1 = 0.25 * (1 - (i + 1) / (n + 2.5));
+      const geo = new THREE.CylinderGeometry(r0, r1 * 1.02, len * 0.96, 28, 1);
+      geo.rotateX(Math.PI / 2);
+      const body = new THREE.Mesh(geo, i % 2 ? M.steel : M.brassDark);
+      body.position.z = -len / 2;
+      seg.add(body);
+      seg.add(new THREE.Mesh(new THREE.TorusGeometry(r0 * 1.02, 0.014, 8, 36), M.brass));
+      if (i % 2 === 0) for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; seg.add(ball(new THREE.Vector3(r0 * 0.97 * Math.cos(a), r0 * 0.97 * Math.sin(a), -len * 0.5), 0.012, M.brass, 6)); }
+      parent.add(seg);
+      abdomen.push(seg);
+      parent = seg;
+    }
+    const stinger = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 16).rotateX(-Math.PI / 2), M.copper);
+    stinger.position.z = -0.29; abdomen[n - 1].add(stinger);
+    explode.push({ obj: abdomen[0], base: abdomen[0].position.clone(), dir: new THREE.Vector3(0, -0.1, -0.85) });
+    anchors.abdomen = anchor(abdomen[4], 0.14, 0.05, -0.1);
+  }
+
+  /* legs */
+  const legs = new THREE.Group(); bug.add(legs);
+  explode.push({ obj: legs, base: legs.position.clone(), dir: new THREE.Vector3(0, -0.7, 0) });
+  [-1, 1].forEach(sx => {
+    [0.28, 0.02, -0.26].forEach((z, i) => {
+      const a = new THREE.Vector3(sx * 0.16, -0.22, z);
+      const b = new THREE.Vector3(sx * 0.46, -0.2 + i * 0.02, z + 0.12 - i * 0.12);
+      const c = new THREE.Vector3(sx * 0.62, -0.62, z + 0.28 - i * 0.26);
+      legs.add(rod(a, b, 0.016, M.steel), rod(b, c, 0.011, M.brass));
+      legs.add(ball(a, 0.03, M.brass, 10), ball(b, 0.026, M.copper, 10), ball(c, 0.018, M.brass, 8));
+      if (sx > 0 && i === 1) anchors.legs = anchor(legs, c.x, c.y, c.z);
+    });
+  });
+
+  /* wings */
+  function buildWing(shape, opts) {
+    const content = new THREE.Group();
+    content.rotation.x = Math.PI / 2; // shape y → +z (forward), shape -z → +y (up)
+    const painter = wingPainter(shape, opts.dial, opts.eyes);
+    const { map, emap, bb } = painter;
+    const geo = new THREE.ShapeGeometry(shape, 48);
+    const pos = geo.attributes.position, uv = geo.attributes.uv;
+    const w = bb.max.x - bb.min.x, h = bb.max.y - bb.min.y;
+    for (let i = 0; i < pos.count; i++) uv.setXY(i, (pos.getX(i) - bb.min.x) / w, (pos.getY(i) - bb.min.y) / h);
+    const mat = new THREE.MeshPhysicalMaterial({
+      map, emissiveMap: emap, emissive: new THREE.Color('#ffb45a'), emissiveIntensity: 0.4,
+      transparent: true, side: THREE.DoubleSide, depthWrite: false,
+      roughness: 0.18, metalness: 0.15, clearcoat: 1, clearcoatRoughness: 0.1,
+      iridescence: 1, iridescenceIOR: 1.35, iridescenceThicknessRange: [180, 620],
+    });
+    const membrane = new THREE.Mesh(geo, mat);
+    membrane.renderOrder = 2;
+    content.add(membrane);
+    painter.paint(wingPalette);
+    painters.push({ paint: painter.paint, material: mat });
+
+    const outline = shape.getSpacedPoints(160).map(p => new THREE.Vector3(p.x, p.y, 0));
+    outline.pop();
+    content.add(tube(outline, 0.026, M.brass, true, 260));
+    for (let i = 0; i < outline.length; i += 8) content.add(ball(outline[i].clone().setZ(-0.02), 0.018, M.brassDark, 8));
+
+    // veins fan out from the root at even angles to the margin
+    const rootV = new THREE.Vector3(0.06, opts.rootY ?? 0, 0);
+    const cand = outline.filter(p => p.distanceTo(rootV) > 0.6).map(p => ({ p, a: Math.atan2(p.y - rootV.y, p.x - rootV.x), d: p.distanceTo(rootV) }));
+    const amin = Math.min(...cand.map(c => c.a)), amax = Math.max(...cand.map(c => c.a));
+    const veins = [];
+    for (let i = 0; i < opts.veins; i++) {
+      const target = amin + (amax - amin) * (0.08 + 0.84 * i / (opts.veins - 1));
+      let best = null;
+      cand.forEach(c => { if (Math.abs(c.a - target) < 0.05 && (!best || c.d > best.d)) best = c; });
+      if (!best) best = cand.reduce((b, c) => Math.abs(c.a - target) < Math.abs(b.a - target) ? c : b);
+      const end = best.p;
+      const mid = rootV.clone().lerp(end, 0.5);
+      const dir = end.clone().sub(rootV).normalize();
+      mid.add(new THREE.Vector3(-dir.y, dir.x, 0).multiplyScalar(0.07));
+      const curve = new THREE.QuadraticBezierCurve3(rootV, mid, end);
+      veins.push(curve);
+      content.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 30, i % 2 ? 0.01 : 0.014, 6), i % 2 ? M.brassDark : M.brass));
+    }
+    [0.42, 0.74].forEach((t, k) => {
+      const pts = veins.map(v => v.getPoint(t));
+      content.add(tube(pts, k ? 0.008 : 0.012, M.copper, false, 80));
+      if (!k) pts.forEach(p => content.add(ball(p, 0.02, M.brass, 8)));
+    });
+
+    const wg = makeGear(M, opts.gearTeeth, 0.018, 0.022, M.brass);
+    wg.position.set(opts.gear.x, opts.gear.y, -0.03);
+    content.add(wg);
+    const wg2 = makeGear(M, 9, 0.018, 0.022, M.copper);
+    const cd = (opts.gearTeeth + 9) * 0.018 / 2;
+    wg2.position.set(opts.gear.x + cd * Math.cos(opts.gear.a), opts.gear.y + cd * Math.sin(opts.gear.a), -0.03);
+    content.add(wg2);
+    gears.push({ obj: wg, axis: 'z', phase: 0, ratio: 1.3 });
+    gears.push({ obj: wg2, axis: 'z', phase: Math.PI / 9, ratio: -1.3 * opts.gearTeeth / 9 });
+    return content;
+  }
+
+  function hinge(side, pos, shape, opts, kind) {
+    const holder = new THREE.Group();
+    holder.position.set(side * pos.x, pos.y, pos.z);
+    if (side < 0) holder.scale.x = -1;
+    const pivot = new THREE.Group();
+    pivot.rotation.order = 'ZXY';
+    const content = buildWing(shape, opts);
+    pivot.add(content);
+    holder.add(pivot);
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.26, 16), M.steel);
+    pin.rotation.x = Math.PI / 2;
+    holder.add(pin);
+    [-0.13, 0.13].forEach(z => holder.add(ball(new THREE.Vector3(0, 0, z), 0.045, M.brass, 12)));
+    bug.add(holder);
+    wings.push({ pivot, kind, side });
+    explode.push({ obj: holder, base: holder.position.clone(), dir: new THREE.Vector3(side * 0.9, kind === 'fore' ? 0.25 : 0.05, kind === 'fore' ? 0.2 : -0.3) });
+    if (side > 0) {
+      if (kind === 'fore') { anchors.fore = anchor(content, 2.2, 0.95, -0.02); anchors.hinge = anchor(holder, 0, 0.05, 0.13); anchors.wingGear = anchor(content, opts.gear.x, opts.gear.y, -0.05); }
+      else anchors.hind = anchor(content, 0.9, -2.5, -0.02);
+    }
+  }
+  [-1, 1].forEach(side => {
+    hinge(side, { x: 0.31, y: 0.04, z: 0.14 }, foreShape(),
+      { veins: 8, dial: { x: 1.95, y: 0.42, r: 0.52 }, eyes: [{ x: 2.72, y: 0.9, r: 0.17 }, { x: 2.3, y: -0.15, r: 0.12 }], gear: { x: 0.62, y: 0.14, a: 0.3 }, gearTeeth: 14 }, 'fore');
+    hinge(side, { x: 0.29, y: 0.0, z: -0.2 }, hindShape(),
+      { veins: 7, rootY: -0.05, dial: { x: 1.18, y: -1.05, r: 0.42 }, eyes: [{ x: 1.72, y: -1.55, r: 0.16 }, { x: 0.93, y: -2.35, r: 0.08 }], gear: { x: 0.5, y: -0.32, a: -0.6 }, gearTeeth: 12 }, 'hind');
+  });
+
+  bug.rotation.x = -0.12;
+  return { bug, gears, wings, painters, abdomen, core, coreLight, anchors, explode, dome };
+}
+
+/* Anatomy labels: which anchor each label sits on */
+const PART_LABELS = [
+  ['fore', 'Forewing', '8 radial veins · discal cross-vein'],
+  ['hind', 'Hindwing', 'swallowtail, 7 veins'],
+  ['train', 'Gear train', '16T : 10T : 12T under a blued hairspring'],
+  ['dome', 'Glass dome', ''],
+  ['core', 'Mainspring core', 'pulses with each beat'],
+  ['eye', 'Compound eye', 'faceted icosahedron'],
+  ['antenna', 'Clubbed antenna', '13 beads, ruby tip'],
+  ['abdomen', 'Abdomen', '9 nested segments'],
+  ['legs', 'Legs', '3 pairs, 2 joints each'],
+];
+// Live telemetry: a rolling time series of wing angles plus derived mechanical readouts.
+
+class Telemetry {
+  constructor(canvas, fields, seconds = 3, rate = 60) {
+    this.canvas = canvas;
+    this.fields = fields;
+    this.n = seconds * rate;
+    this.dt = 1 / rate;
+    this.fore = new Float32Array(this.n);
+    this.hind = new Float32Array(this.n);
+    this.head = 0;
+    this.acc = 0;
+    this.colors = { fore: '#946a28', hind: '#1f8f86', grid: 'rgba(0,0,0,0.12)', text: '#5d6878' };
+    this.fpsFrames = 0; this.fpsTime = 0; this.fps = 60;
+    this.lastText = 0;
+  }
+  setColors(c) { this.colors = c; }
+
+  // Resample to a fixed rate so the chart is independent of the display refresh rate.
+  push(dt, foreDeg, hindDeg) {
+    this.acc += dt;
+    while (this.acc >= this.dt) {
+      this.acc -= this.dt;
+      this.fore[this.head] = foreDeg;
+      this.hind[this.head] = hindDeg;
+      this.head = (this.head + 1) % this.n;
+    }
+  }
+  frame(dt) {
+    this.fpsFrames++; this.fpsTime += dt;
+    if (this.fpsTime >= 0.5) { this.fps = this.fpsFrames / this.fpsTime; this.fpsFrames = 0; this.fpsTime = 0; }
+  }
+
+  // Estimate the fore→hind phase lag from the cross-correlation of the two series.
+  lagMs(beats) {
+    let best = 0, bestK = 0;
+    // search within half a wing-beat period so the next cycle's peak is not picked up
+    const n = this.n, maxK = Math.max(2, Math.min(Math.floor(n / 3), Math.floor(0.5 / beats / this.dt)));
+    let mf = 0, mh = 0;
+    for (let i = 0; i < n; i++) { mf += this.fore[i]; mh += this.hind[i]; }
+    mf /= n; mh /= n;
+    for (let k = 0; k < maxK; k++) {
+      let s = 0;
+      for (let i = 0; i < n - k; i++) {
+        const a = (this.head + i) % n, b = (this.head + i + k) % n;
+        s += (this.fore[a] - mf) * (this.hind[b] - mh);
+      }
+      s /= (n - k);
+      if (s > best) { best = s; bestK = k; }
+    }
+    return bestK * this.dt * 1000;
+  }
+
+  draw() {
+    const cv = this.canvas, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = cv.clientWidth, H = cv.clientHeight;
+    if (!W) return;
+    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const c = cv.getContext('2d');
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, W, H);
+    const lo = -40, hi = 70, padL = 28, padB = 4, padT = 4;
+    const y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
+    c.font = '10px "IBM Plex Mono", monospace';
+    c.textAlign = 'right'; c.textBaseline = 'middle';
+    [-30, 0, 30, 60].forEach(v => {
+      c.strokeStyle = this.colors.grid; c.lineWidth = v === 0 ? 1 : 0.6;
+      c.beginPath(); c.moveTo(padL, y(v)); c.lineTo(W, y(v)); c.stroke();
+      c.fillStyle = this.colors.text; c.fillText(`${v}°`, padL - 4, y(v));
+    });
+    const line = (arr, color, alpha) => {
+      c.strokeStyle = color; c.globalAlpha = alpha; c.lineWidth = 1.6; c.lineJoin = 'round';
+      c.beginPath();
+      for (let i = 0; i < this.n; i++) {
+        const v = arr[(this.head + i) % this.n];
+        const x = padL + i / (this.n - 1) * (W - padL);
+        i ? c.lineTo(x, y(v)) : c.moveTo(x, y(v));
+      }
+      c.stroke();
+      c.globalAlpha = 1;
+      const last = arr[(this.head + this.n - 1) % this.n];
+      c.fillStyle = color; c.beginPath(); c.arc(W - 3, y(last), 3, 0, Math.PI * 2); c.fill();
+    };
+    line(this.hind, this.colors.hind, 0.9);
+    line(this.fore, this.colors.fore, 1);
+  }
+
+  // Text readouts update at 4 Hz so they stay legible.
+  text(now, values) {
+    if (now - this.lastText < 250) return;
+    this.lastText = now;
+    let mn = Infinity, mx = -Infinity;
+    for (const v of this.fore) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    const f = this.fields;
+    f.amp.textContent = `${(mx - mn).toFixed(1)}°`;
+    f.lag.textContent = `${Math.round(this.lagMs(values.beats))} ms`;
+    f.A.textContent = `${values.A.toFixed(1)} rpm`;
+    f.B.textContent = `${values.B.toFixed(1)} rpm`;
+    f.C.textContent = `${values.C.toFixed(1)} rpm`;
+    f.fps.textContent = `${Math.round(this.fps)} fps`;
+    f.tri.textContent = values.tri.toLocaleString('en-US');
+    f.calls.textContent = values.calls.toLocaleString('en-US');
+  }
+}
+// Clockwork Butterfly — scene setup, aesthetic modes, anatomy view, telemetry and animation loop.
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const params = new URLSearchParams(location.search);
+const hashTokens = location.hash.replace('#', '').split(/[.~_-]/).filter(Boolean);
+const $ = id => document.getElementById(id);
+
+/* ---------- renderer / scene ---------- */
+const canvas = $('stage');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+let dpr = Math.min(window.devicePixelRatio, 2);
+renderer.setPixelRatio(dpr);
+renderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+// Screen-space backdrop. A fresh texture is made whenever the canvas size changes.
+function setBackground(theme) {
+  const cv = document.createElement('canvas');
+  paintBackground(cv, theme, innerWidth, innerHeight);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  if (scene.background && scene.background.isTexture) scene.background.dispose();
+  scene.background = tex;
+}
+scene.fog = new THREE.FogExp2('#e6ebf1', 0.018);
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 100);
+function placeCamera() {
+  const narrow = innerWidth / innerHeight < 0.8;
+  const short = innerHeight < 760; // leave room for the control bar
+  camera.position.set(4.2, 3.6, 6.2).multiplyScalar((narrow ? 2.2 : 1.1) * (short ? 1.15 : 1));
+}
+placeCamera();
+
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.minDistance = 3;
+controls.maxDistance = 16;
+controls.target.set(0, -0.05, 0);
+controls.autoRotate = !reduceMotion && params.get('still') !== '1';
+controls.autoRotateSpeed = 0.6;
+
+const key = new THREE.DirectionalLight('#ffffff', 2); key.position.set(4, 6, 3); scene.add(key);
+const rim = new THREE.DirectionalLight('#ffffff', 1); rim.position.set(-5, 2, -6); scene.add(rim);
+const hemi = new THREE.HemisphereLight('#ffffff', '#888888', 0.5); scene.add(hemi);
+
+/* ---------- the specimen ---------- */
+const M = createMaterials();
+const B = buildButterfly(M, THEMES.porcelain.wing);
+scene.add(B.bug);
+
+/* drifting dust */
+const dust = (() => {
+  const n = 700, arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const r = 3 + Math.random() * 10, t = Math.random() * Math.PI * 2, p = Math.acos(2 * Math.random() - 1);
+    arr.set([r * Math.sin(p) * Math.cos(t), r * Math.cos(p) * 0.6, r * Math.sin(p) * Math.sin(t)], i * 3);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  const m = new THREE.PointsMaterial({ color: '#e0b56a', size: 0.035, transparent: true, opacity: 0.5, depthWrite: false });
+  const pts = new THREE.Points(g, m); scene.add(pts); return pts;
+})();
+
+/* ---------- post-processing ---------- */
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.3, 0.4, 0.9);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+/* ---------- telemetry ---------- */
+const tel = new Telemetry($('spark'), {
+  amp: $('tAmp'), lag: $('tLag'), A: $('tA'), B: $('tB'), C: $('tC'), fps: $('tFps'), tri: $('tTri'), calls: $('tCalls'),
+});
+renderer.info.autoReset = false;
+
+/* ---------- aesthetic modes ---------- */
+let mode = null;
+let wingGlow = 0.3;
+const METALS = ['brass', 'brassDark', 'copper', 'steel', 'blued'];
+
+function applyTheme(name) {
+  const T = THEMES[name];
+  mode = name;
+  document.documentElement.dataset.mode = name;
+
+  setBackground(T);
+  scene.fog.color.set(T.fog[0]); scene.fog.density = T.fog[1];
+  renderer.toneMapping = T.tone === 'aces' ? THREE.ACESFilmicToneMapping : THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = T.exposure;
+  [bloom.strength, bloom.radius, bloom.threshold] = T.bloom;
+  key.color.set(T.key[0]); key.intensity = T.key[1];
+  rim.color.set(T.rim[0]); rim.intensity = T.rim[1];
+  hemi.color.set(T.hemi[0]); hemi.groundColor.set(T.hemi[1]); hemi.intensity = T.hemi[2];
+
+  METALS.forEach(k => M[k].color.set(T.metals[k]));
+  M.eye.color.set(T.eye[0]); M.eye.emissive.set(T.eye[1]); M.eye.emissiveIntensity = T.eye[2];
+  M.core.color.set(T.core).multiplyScalar(T.coreGlow);
+  B.coreLight.color.set(T.core);
+
+  B.painters.forEach(p => { p.paint(T.wing); p.material.emissive.set(T.wing.glow); });
+  wingGlow = T.wing.glowI;
+
+  dust.material.color.set(T.dust[0]);
+  dust.material.opacity = T.dust[1];
+  dust.material.blending = T.dust[2] ? THREE.AdditiveBlending : THREE.NormalBlending;
+  dust.material.needsUpdate = true;
+
+  const cs = getComputedStyle(document.documentElement);
+  tel.setColors({
+    fore: cs.getPropertyValue('--accent').trim(),
+    hind: cs.getPropertyValue('--accent-2').trim(),
+    grid: cs.getPropertyValue('--line').trim(),
+    text: cs.getPropertyValue('--muted').trim(),
+  });
+
+  $('modeName').textContent = T.label;
+  document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === name)));
+  try { history.replaceState(null, '', location.pathname + location.search + '#' + name); } catch (e) { /* sandboxed frames may refuse */ }
+}
+
+let switching = false;
+function switchMode(name) {
+  if (name === mode || switching || !THEMES[name]) return;
+  if (reduceMotion) { applyTheme(name); return; }
+  switching = true;
+  const curtain = $('curtain');
+  curtain.classList.add('on');
+  setTimeout(() => {
+    applyTheme(name);
+    requestAnimationFrame(() => { curtain.classList.remove('on'); switching = false; });
+  }, 190);
+}
+
+// swatches
+const row = $('modeRow');
+MODE_ORDER.forEach((name, i) => {
+  const T = THEMES[name];
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'swatch';
+  b.dataset.mode = name;
+  b.style.setProperty('--sw-bg', T.swatch[0]);
+  b.style.setProperty('--sw-accent', T.swatch[1]);
+  b.setAttribute('aria-label', `${T.label} mode (key ${i + 1})`);
+  b.title = `${T.label} · ${i + 1}`;
+  b.addEventListener('click', () => switchMode(name));
+  row.appendChild(b);
+});
+
+/* ---------- anatomy labels ---------- */
+const labelsEl = $('labels');
+const labels = PART_LABELS.filter(([k]) => B.anchors[k]).map(([k, name, note]) => {
+  const el = document.createElement('div');
+  el.className = 'label';
+  el.innerHTML = `<i></i><span>${name}${note ? `<small>${note}</small>` : ''}</span>`;
+  labelsEl.appendChild(el);
+  return { el, anchor: B.anchors[k] };
+});
+const tmp = new THREE.Vector3();
+function updateLabels(amount) {
+  labelsEl.style.display = amount > 0.02 ? '' : 'none';
+  if (amount <= 0.02) return;
+  const op = Math.max(0, (amount - 0.4) / 0.6);
+  labels.forEach(({ el, anchor }) => {
+    anchor.getWorldPosition(tmp).project(camera);
+    if (tmp.z > 1) { el.style.opacity = 0; return; }
+    const x = (tmp.x * 0.5 + 0.5) * innerWidth, y = (-tmp.y * 0.5 + 0.5) * innerHeight;
+    const flip = x > innerWidth - 240; // keep labels near the right edge on screen
+    el.classList.toggle('flip', flip);
+    el.style.transform = flip
+      ? `translate(${(x + 3.5).toFixed(1)}px, ${y.toFixed(1)}px) translate(-100%, -50%)`
+      : `translate(${(x - 3.5).toFixed(1)}px, ${y.toFixed(1)}px) translateY(-50%)`;
+    el.style.opacity = op;
+  });
+}
+
+/* ---------- controls UI ---------- */
+const beatIn = $('beat'), beatOut = $('beatOut');
+let beats = reduceMotion ? 0.4 : 1.2;
+beatIn.value = beats;
+let paused = false, anatomy = false;
+function showRate() { beatOut.textContent = `${beats.toFixed(1)} Hz · ${Math.round(beats * 7200).toLocaleString('en-US')} vph`; }
+showRate();
+beatIn.addEventListener('input', () => { beats = parseFloat(beatIn.value); showRate(); });
+
+const pauseBtn = $('pauseBtn'), orbitBtn = $('orbitBtn'), anatomyBtn = $('anatomyBtn'), telBtn = $('telBtn'), captureBtn = $('captureBtn');
+function setPaused(p) { paused = p; pauseBtn.setAttribute('aria-pressed', String(p)); pauseBtn.textContent = p ? 'Resume' : 'Pause'; }
+function setAnatomy(a) { anatomy = a; anatomyBtn.setAttribute('aria-pressed', String(a)); }
+function setTelemetry(on) { $('telemetry').hidden = !on; telBtn.setAttribute('aria-pressed', String(on)); }
+function setOrbit(on) { controls.autoRotate = on; orbitBtn.setAttribute('aria-pressed', String(on)); }
+pauseBtn.addEventListener('click', () => setPaused(!paused));
+orbitBtn.addEventListener('click', () => setOrbit(!controls.autoRotate));
+anatomyBtn.addEventListener('click', () => setAnatomy(!anatomy));
+telBtn.addEventListener('click', () => setTelemetry($('telemetry').hidden));
+setOrbit(controls.autoRotate);
+
+// PNG capture works when the page is served on its own (e.g. GitHub Pages), not inside an embedding frame.
+if (window.self === window.top) {
+  captureBtn.hidden = false;
+  captureBtn.addEventListener('click', () => {
+    composer.render();
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `clockwork-butterfly-${mode}.png`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }, 'image/png');
+  });
+}
+
+addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+  const n = parseInt(e.key, 10);
+  if (n >= 1 && n <= MODE_ORDER.length) { switchMode(MODE_ORDER[n - 1]); return; }
+  if (e.key === 'a' || e.key === 'A') setAnatomy(!anatomy);
+  else if (e.key === 't' || e.key === 'T') setTelemetry($('telemetry').hidden);
+  else if (e.code === 'Space' && e.target.tagName !== 'BUTTON') { e.preventDefault(); setPaused(!paused); }
+});
+
+/* ---------- initial state from URL ---------- */
+const startMode = hashTokens.find(t => THEMES[t]) || params.get('mode') || 'porcelain';
+applyTheme(THEMES[startMode] ? startMode : 'porcelain');
+if (hashTokens.includes('anatomy') || params.get('anatomy') === '1') setAnatomy(true);
+if (hashTokens.includes('telemetry') || params.get('telemetry') === '1') setTelemetry(true);
+if (params.get('ui') === '0') document.querySelectorAll('.top, .controls').forEach(el => { el.hidden = true; });
+
+/* ---------- animate ---------- */
+const clock = new THREE.Clock();
+let phase = 0, gearAngle = 0, t = 0, speedEase = 1, explodeAmt = anatomy ? 1 : 0;
+if (params.has('phase')) { phase = parseFloat(params.get('phase')) || 0; t = phase; setPaused(true); speedEase = 0; }
+let perfTimer = 0, downgraded = false;
+
+function flap(kind, amp) {
+  const lag = kind === 'hind' ? 0.35 : 0;
+  const f = Math.sin(phase - lag);
+  const shaped = f > 0 ? Math.pow(f, 0.8) : -Math.pow(-f, 1.2); // quicker, stronger downstroke
+  return { z: 0.18 + 0.78 * amp * shaped, x: 0.16 * amp * Math.cos(phase - lag) * (kind === 'fore' ? 1 : 0.6) };
+}
+
+function tick(fixedDt, draw = true) {
+  const dt = fixedDt ?? Math.min(clock.getDelta(), 0.05);
+  speedEase += ((paused ? 0 : 1) - speedEase) * Math.min(1, dt * 3);
+  const run = dt * speedEase;
+  t += run;
+  phase += run * beats * Math.PI * 2;
+  const gearRate = beats * 2.4 * speedEase; // rad/s of gear A
+  gearAngle += dt * gearRate;
+
+  explodeAmt += ((anatomy ? 1 : 0) - explodeAmt) * Math.min(1, dt * (reduceMotion ? 20 : 3.5));
+  const e = explodeAmt * explodeAmt * (3 - 2 * explodeAmt);
+  B.explode.forEach(p => p.obj.position.copy(p.base).addScaledVector(p.dir, e));
+  const amp = 1 - 0.75 * e;
+
+  let foreDeg = 0, hindDeg = 0;
+  B.wings.forEach(({ pivot, kind }) => {
+    const r = flap(kind, amp);
+    pivot.rotation.z = r.z; pivot.rotation.x = r.x;
+    if (kind === 'fore') foreDeg = THREE.MathUtils.radToDeg(r.z); else hindDeg = THREE.MathUtils.radToDeg(r.z);
+  });
+
+  B.bug.position.y = (-0.1 * Math.sin(phase + 0.6) + 0.15 * Math.sin(t * 0.55)) * amp;
+  B.bug.rotation.z = 0.05 * Math.sin(t * 0.4);
+  B.bug.rotation.y = 0.08 * Math.sin(t * 0.3);
+  B.abdomen.forEach((seg, i) => { seg.rotation.x = -0.03 - 0.025 * Math.sin(phase - i * 0.35) * speedEase; });
+
+  B.gears.forEach(g => {
+    if (g.osc) { g.obj.rotation.y = 0.6 * Math.sin(phase * 2); return; }
+    const a = g.phase + gearAngle * g.ratio;
+    if (g.axis === 'y') g.obj.rotation.y = a; else g.obj.rotation.z = a;
+  });
+
+  const pulse = 0.5 + 0.5 * Math.sin(phase);
+  B.coreLight.intensity = 1.6 + 1.6 * pulse;
+  B.core.scale.setScalar(0.92 + 0.12 * pulse);
+  B.painters.forEach(p => { p.material.emissiveIntensity = wingGlow * (0.75 + 0.6 * pulse); });
+
+  dust.rotation.y += dt * 0.015;
+  controls.autoRotateSpeed = anatomy ? 0.25 : 0.6;
+  controls.update();
+
+  if (draw) {
+    renderer.info.reset();
+    composer.render();
+    updateLabels(e);
+  }
+
+  // telemetry
+  tel.frame(dt);
+  tel.push(dt, foreDeg, hindDeg);
+  if (draw && !$('telemetry').hidden) {
+    tel.draw();
+    const rpm = r => Math.abs(gearRate * r) * 60 / (Math.PI * 2);
+    tel.text(performance.now(), {
+      beats, A: rpm(1), B: rpm(16 / 10), C: rpm(16 / 12),
+      tri: renderer.info.render.triangles, calls: renderer.info.render.calls,
+    });
+  }
+
+  // adaptive quality: drop to 1× pixel ratio once if the frame rate stays low
+  perfTimer += dt;
+  if (!downgraded && perfTimer > 4 && tel.fps < 38 && dpr > 1) {
+    downgraded = true; dpr = 1;
+    renderer.setPixelRatio(1); composer.setPixelRatio(1);
+  }
+
+  if (!manual) requestAnimationFrame(() => tick());
+}
+
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+  bloom.setSize(innerWidth, innerHeight);
+  setBackground(THEMES[mode]);
+});
+
+// ?manual=1 drives the clock by hand (deterministic frames for screenshots and the README GIF).
+const manual = params.get('manual') === '1';
+if (manual) window.__step = (n = 1, dt = 1 / 60) => { for (let i = 0; i < n; i++) tick(dt, i === n - 1); };
+if (params.get('debug') === '1') window.__cb = { scene, renderer, M, bloom, composer, B, dust, THREE, tel };
+tick();
+</script>
+</body>
+</html>
