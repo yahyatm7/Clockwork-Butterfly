@@ -88,15 +88,6 @@ At 1.2 Hz the hindwing lag is 0.35 / (2π · 1.2) ≈ 46 ms. The telemetry panel
 ### 💡 Rendering
 PBR materials lit by a procedural `RoomEnvironment`, a key and rim light, and a point light inside the mainspring core. Post-processing is `UnrealBloomPass` + `OutputPass`. The light modes use Neutral tone mapping so the pale backgrounds stay clean; Midnight uses ACES for richer highlights.
 
-## 🚀 Run it locally
-
-**Just double-click `index.html`.** It is a single self-contained file (CSS and JS inlined), so it opens straight from your file explorer. An internet connection is needed the first time, because three.js and the fonts load from a CDN.
-
-```bash
-git clone https://github.com/YOUR-USERNAME/clockwork-butterfly.git
-cd clockwork-butterfly
-# then open index.html in your browser
-```
 
 ### 🛠️ Editing the code
 The readable source lives in `src/` (split into modules). After editing, rebuild the root `index.html`:
@@ -112,12 +103,7 @@ cd src
 python -m http.server 8000      # open http://localhost:8000
 ```
 
-## 🌐 Deploy to GitHub Pages
 
-1. Push the repository to GitHub.
-2. Open **Settings → Pages**.
-3. Under *Build and deployment*, choose **Deploy from a branch**, branch `main`, folder `/ (root)`, then **Save**.
-4. After a minute the site is live at `https://YOUR-USERNAME.github.io/clockwork-butterfly/`.
 
 ## 📁 Project structure
 
